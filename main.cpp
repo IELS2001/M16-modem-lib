@@ -14,7 +14,7 @@ int main()
 	std::cout << "Decoded message: " << "ID: " << (unsigned short)protocol.id << "\tCommand: "
 			  << (unsigned short)protocol.command << "\tData: " << (protocol.data & 0b0000001111111111) << std::endl;
 
-	unsigned short codedMessage = code(protocol);
+	unsigned short codedMessage = encode(protocol);
 	std::cout << "Coded message:" << codedMessage << std::endl;
 
 	ProtocolStructure decodedMessage = decode(codedMessage);
