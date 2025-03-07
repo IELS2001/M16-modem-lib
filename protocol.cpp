@@ -29,8 +29,8 @@ namespace coder_decoder
 	unsigned short coder_decoder::code(unsigned char id, Command command, unsigned short data)
 	{
 		unsigned short codedMessage = 0;
-		codedMessage |= (id << (5 + 8));
-		codedMessage |= (command << (2 + 8));
+		codedMessage |= ((0b00000111 & id) << (5 + 8));
+		codedMessage |= ((0b00000111 & command) << (2 + 8));
 		codedMessage |= 0b0000001111111111 & data;
 		return codedMessage;
 	}
