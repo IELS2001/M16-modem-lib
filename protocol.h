@@ -5,6 +5,9 @@
  * This header file declares the functions and structures necessary for encoding and decoding
  * messages in a 16-bit format. It includes an enumeration for command types and a structure
  * to hold protocol data.
+ * 
+ * @author Ole Anders Astad
+ * @date March 2025
  */
 
 #ifndef PROTOCOL_H
