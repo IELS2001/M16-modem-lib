@@ -32,6 +32,9 @@ namespace coder_decoder
 	 *
 	 * The `ProtocolStructure` contains an ID, a command type, and data. These components
 	 * are used to encode and decode messages for communication.
+	 * 
+	 * @author Ole Anders Astad
+	 * @date March 2025
 	 */
 	struct ProtocolStructure
 	{
