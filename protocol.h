@@ -1,3 +1,5 @@
+#ifndef PROTOCOL_H
+#define PROTOCOL_H
 /**
  * @file protocol.h
  * @brief Defines the communication protocol for encoding and decoding messages.
@@ -10,8 +12,6 @@
  * @date March 2025
  */
 
-#ifndef PROTOCOL_H
-#define PROTOCOL_H
 #include <iostream>
 
 template <typename T>

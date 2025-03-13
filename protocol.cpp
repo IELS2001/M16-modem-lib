@@ -9,7 +9,6 @@
  * @author Ole Anders Astad
  * @date March 2025
  */
-
 #include "protocol.h"
 
 /**
@@ -37,7 +36,6 @@ std::string convertToBinary(T input)
 			output += '0';
 		}
 	}
-
 	return output;
 }
 
