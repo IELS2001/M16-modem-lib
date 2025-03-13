@@ -6,6 +6,7 @@
  * an interface for interacting with the M16 modem using UART communication.
  *
  * @author Stian Østhus Lund
+ * Modified by: Ole Anders Astad
  * @date March 2025
  */
 #include "M16-lib.h"
@@ -228,7 +229,7 @@ void M16::sendByte_TEST(uint8_t byte)
 	uart_write_bytes(this->uart_num, (const char *)&byte, 1);
 }
 
-size_t M16::getRxBuffLenght()
+size_t M16::getRxBuffLength()
 {
 	size_t buffered_size;
 	uart_get_buffered_data_len(this->uart_num, &buffered_size);
