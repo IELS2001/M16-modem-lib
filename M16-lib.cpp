@@ -68,8 +68,10 @@ void M16::sendByte(uint8_t byte)
 bool M16::sendPacket(unsigned short packet)
 {
 	uint8_t bytes[2];
-	bytes[0] = packet & 0xff;
-	bytes[1] = (packet >> 8) & 0xff;
+	bytes[0] = (packet >> 8) & 0xff;
+	Serial.printf("Byte[0] from packet %s", convertToBinary(bytes[0]));
+	bytes[1] = packet & 0xff;
+	Serial.printf("Byte[1] from packet %s", convertToBinary(bytes[1]));
 	uart_write_bytes(this->uart_num, (const char *)&bytes, 2);
 
 	// TODO: Implement error checking and return value.
@@ -209,15 +211,17 @@ bool M16::requestReport()
 	return true;
 }
 
-bool M16::sendPacket(coder_decoder::ProtocolStructure packet)
+bool M16::sendPacket(ProtocolStructure packet)
 {
-	unsigned short encodedPackage = coder_decoder::encode(packet);
+	unsigned short encodedPackage = encode(packet);
+	Serial.print("Encoded data: ");
+	Serial.println(convertToBinary(encodedPackage));
 	return sendPacket(encodedPackage);
 }
 
-bool M16::sendPacket(unsigned char id, coder_decoder::Command command, unsigned short data)
+bool M16::sendPacket(unsigned char id, Command command, unsigned short data)
 {
-	unsigned short encodedPackage = coder_decoder::encode(id, command, data);
+	unsigned short encodedPackage = encode(id, command, data);
 	return sendPacket(encodedPackage);
 }
 
@@ -289,6 +293,16 @@ ProtocolStructure M16::decode(unsigned short messageToDecode)
 	return result;
 }
 
+ProtocolStructure M16::decode(uint8_t *messageToDecode)
+{
+	ProtocolStructure result;
+	result.id = 0b00000111 & (messageToDecode[0] >> 5);
+	result.command = static_cast<Command>(0b00000111 & (messageToDecode[0] >> 2));
+	result.data = (messageToDecode[0] & 0b00000011) << 8;
+	result.data |= messageToDecode[1];
+	return result;
+}
+
 /**
  * @brief Converts an input value to a binary string representation.
  *
@@ -300,9 +314,9 @@ ProtocolStructure M16::decode(unsigned short messageToDecode)
  * @return A string representing the binary value of the input.
  */
 template <typename T>
-std::string convertToBinary(T input)
+String convertToBinary(T input)
 {
-	std::string output = "0b";
+	String output = "0b";
 	for (int i = (sizeof(input) * 8) - 1; i >= 0; i--)
 	{
 		if (input & (1 << i))

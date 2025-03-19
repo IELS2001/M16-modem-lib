@@ -14,9 +14,8 @@
 #define M16_LIB_H
 
 #include <Arduino.h>
-#include "driver/uart.h"
-#include "protocol.h"
 #include <iostream>
+#include "driver/uart.h"
 
 #define M16_BAUD 9600
 
@@ -27,6 +26,19 @@ Client: id(client ID) what sensor (command) sensor data (data) X sensor amount
 Client: id(client ID) finished (command) no data (data)
 Server: id(client ID) ok (command) sensor amount (data)
 */
+
+// Max value is 7
+enum Command : uint8_t
+{
+	HI,
+	REQUEST_DATA,
+	FINISHED,
+	TEMP_SENSOR,
+	PRESSURE_SENSOR,
+	CONDUCTIVITY_SENSOR,
+	PH_SENSOR,
+	SENSOR_DATA_RECEIVED
+};
 
 /**
  * @brief Structure representing the components of the communication protocol.
@@ -43,19 +55,6 @@ struct ProtocolStructure
 	Command command;	 ///< The command type indicating the action to perform.
 	unsigned short data; ///< The actual data being transmitted.
 };
-
-// Max value is 7
-enum class Commands : uint8_t
-{
-	HI,
-	REQUEST_DATA,
-	FINISHED,
-	TEMP_SENSOR,
-	PRESSURE_SENSOR,
-	CONDUCTIVITY_SENSOR,
-	PH_SENSOR,
-	SENSOR_DATA_RECEIVED
-}
 
 struct Report
 {
@@ -88,9 +87,10 @@ private:
 	bool sendPacket(unsigned short packet);
 	unsigned short encode(unsigned char id, Command command, unsigned short data);
 	unsigned short encode(ProtocolStructure send);
-	ProtocolStructure decode(unsigned short messageToDecode);
 
 public:
+	ProtocolStructure decode(unsigned short messageToDecode);
+	ProtocolStructure decode(uint8_t *messageToDecode);
 	Report report;
 	M16(uart_port_t uart_num);
 	void begin(uint8_t rx_pin, uint8_t tx_pin);
@@ -105,6 +105,6 @@ public:
 };
 
 template <typename T>
-std::string convertToBinary(T input);
+String convertToBinary(T input);
 
 #endif // M16_LIB_H
