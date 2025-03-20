@@ -6,7 +6,7 @@
  * an interface for interacting with the M16 modem using UART communication.
  *
  * @author Stian Østhus Lund
- * Modified by: Ole Anders Astad
+ * @author Ole Anders Astad
  * @date March 2025
  */
 #include "M16-lib.h"
@@ -63,6 +63,19 @@ void M16::begin(uint8_t rx_pin, uint8_t tx_pin)
 void M16::sendByte(uint8_t byte)
 {
 	uart_write_bytes(this->uart_num, (const char *)&byte, 1);
+}
+
+bool M16::sendPacket(unsigned short packet)
+{
+	uint8_t bytes[2];
+	bytes[0] = (packet >> 8) & 0xff;
+	Serial.printf("Byte[0] from packet %s", convertToBinary(bytes[0]));
+	bytes[1] = packet & 0xff;
+	Serial.printf("Byte[1] from packet %s", convertToBinary(bytes[1]));
+	uart_write_bytes(this->uart_num, (const char *)&bytes, 2);
+
+	// TODO: Implement error checking and return value.
+	return true;
 }
 
 /**
@@ -198,35 +211,18 @@ bool M16::requestReport()
 	return true;
 }
 
-/**
- * @brief Sends a packet with the specified ID and data.
- *
- * This function packs the given ID and data into a 16-bit value and sends it
- * byte by byte using the sendByte method. The ID is shifted left by 13 bits
- * and combined with the data using a bitwise OR operation. Any remaining bits
- * in the uint8_t ID and uint16_t data will be truncated to fit into the 3-bit
- * and 13-bit fields respectively.
- *
- * @param ID The 3-bit identifier for the packet (0-7).
- * @param data The 13-bit data to be sent (0-8191).
- * @return bool Returns true if the packet was sent successfully, false otherwise.
- *         (Note: Error checking and return value implementation is pending).
- */
-bool M16::sendPacket(uint8_t ID, uint16_t data)
+bool M16::sendPacket(ProtocolStructure packet)
 {
-	uint16_t packedData = (ID << 13) | data;
-	uint8_t bytes[2];
-	bytes[0] = packedData >> 8;
-	bytes[1] = packedData & 0xff;
-	uart_write_bytes(this->uart_num, (const char *)&bytes, 2);
-
-	// TODO: Implement error checking and return value.
-	return true;
+	unsigned short encodedPackage = encode(packet);
+	Serial.print("Encoded data: ");
+	Serial.println(convertToBinary(encodedPackage));
+	return sendPacket(encodedPackage);
 }
 
-void M16::sendByte_TEST(uint8_t byte)
+bool M16::sendPacket(unsigned char id, Command command, unsigned short data)
 {
-	uart_write_bytes(this->uart_num, (const char *)&byte, 1);
+	unsigned short encodedPackage = encode(id, command, data);
+	return sendPacket(encodedPackage);
 }
 
 size_t M16::getRxBuffLength()
@@ -242,4 +238,95 @@ int M16::readRxBuff(uint8_t *data, size_t length)
 	num = uart_read_bytes(this->uart_num, data, length, pdMS_TO_TICKS(100));
 	uart_flush_input(this->uart_num);
 	return num;
+}
+
+/**
+ * @brief Encodes input values into a 16-bit message.
+ *
+ * This function constructs a 16-bit message by encoding an ID (3 bits), a command (3 bits),
+ * and data (10 bits). The format of the final message is:
+ * - bbb(ID)bbb(Command)bbbbbbbbbb(Data)
+ *
+ * @param id The ID to identify a unit (only the first 3 bits are kept).
+ * @param command The command/type of the action (only the first 3 bits are kept).
+ * @param data The actual data to send (first 10 bits are used).
+ * @return The final encoded message as an unsigned short.
+ */
+unsigned short M16::encode(unsigned char id, Command command, unsigned short data)
+{
+	unsigned short codedMessage = 0;
+	codedMessage |= ((0b00000111 & id) << (5 + 8));
+	codedMessage |= ((0b00000111 & command) << (2 + 8));
+	codedMessage |= 0b0000001111111111 & data;
+	return codedMessage;
+}
+
+/**
+ * @brief Encodes a ProtocolStructure into a 16-bit message.
+ *
+ * This function takes a `ProtocolStructure` object and encodes its fields into a
+ * single 16-bit message.
+ *
+ * @param send The `ProtocolStructure` containing the ID, command, and data to encode.
+ * @return The final encoded message as an unsigned short.
+ */
+unsigned short M16::encode(ProtocolStructure send)
+{
+	return encode(send.id, send.command, send.data);
+}
+
+/**
+ * @brief Decodes a 16-bit message into a `ProtocolStructure`.
+ *
+ * This function extracts the ID (3 bits), command (3 bits), and data (10 bits) from the
+ * given 16-bit message and returns them in a `ProtocolStructure` object.
+ *
+ * @param messageToDecode The 16-bit encoded message.
+ * @return A `ProtocolStructure` containing the extracted ID, command, and data.
+ */
+ProtocolStructure M16::decode(unsigned short messageToDecode)
+{
+	ProtocolStructure result;
+	result.id = 0b0000000000000111 & (messageToDecode >> (5 + 8));
+	result.command = static_cast<Command>(0b0000000000000111 & (messageToDecode >> (2 + 8)));
+	result.data = (messageToDecode & 0b0000001111111111);
+	return result;
+}
+
+ProtocolStructure M16::decode(uint8_t *messageToDecode)
+{
+	ProtocolStructure result;
+	result.id = 0b00000111 & (messageToDecode[0] >> 5);
+	result.command = static_cast<Command>(0b00000111 & (messageToDecode[0] >> 2));
+	result.data = (messageToDecode[0] & 0b00000011) << 8;
+	result.data |= messageToDecode[1];
+	return result;
+}
+
+/**
+ * @brief Converts an input value to a binary string representation.
+ *
+ * This function takes an input of type T and returns a string representation of its binary value.
+ * The resulting string is prefixed with "0b" to indicate its binary format.
+ *
+ * @tparam T The type of the input parameter.
+ * @param input The value to be converted into a binary string.
+ * @return A string representing the binary value of the input.
+ */
+template <typename T>
+String convertToBinary(T input)
+{
+	String output = "0b";
+	for (int i = (sizeof(input) * 8) - 1; i >= 0; i--)
+	{
+		if (input & (1 << i))
+		{
+			output += '1';
+		}
+		else
+		{
+			output += '0';
+		}
+	}
+	return output;
 }
