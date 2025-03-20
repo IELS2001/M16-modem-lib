@@ -1,0 +1,54 @@
+{
+    "name": "M16-modem-library",
+    "version": "1.0.0",
+    "description": "A library for communication between two M16 modems",
+    "keywords": "M16, modem, communication",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/IELS2001/M16-modem-lib.git"
+    },
+    "authors": [
+        {
+            "name": "Stian Østhus Lund",
+            "url": "https://github.com/Stian-Lund"
+        },
+        {
+            "name": "Ole Anders Astad",
+            "url": "https://github.com/Mr-MagmaCode"
+        }
+    ],
+    "license": "MIT",
+    "homepage": "https://github.com/IELS2001",
+    "frameworks": "arduino",
+    "platforms": "espressif32",
+    "examples": [
+        {
+            "name": "Get Report",
+            "base": "examples/",
+            "files": [
+                "get-report.cpp"
+            ]
+        },
+        {
+            "name": "Reciever",
+            "base": "examples/",
+            "files": [
+                "reciever.cpp"
+            ]
+        },
+        {
+            "name": "Sender",
+            "base": "examples/",
+            "files": [
+                "sender.cpp"
+            ]
+        },
+        {
+            "name": "Protocol",
+            "base": "examples/",
+            "files": [
+                "protocol.cpp"
+            ]
+        }
+    ]
+}
