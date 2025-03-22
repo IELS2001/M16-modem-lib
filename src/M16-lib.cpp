@@ -11,6 +11,9 @@
  */
 #include "M16-lib.h"
 
+#define MINIMUM_SEND_TIME 1600
+unsigned long long lastTimePackageSent = 0;
+
 /**
  * @brief Constructor for the M16 class.
  *
@@ -67,15 +70,26 @@ void M16::sendByte(uint8_t byte)
 
 bool M16::sendPacket(unsigned short packet)
 {
-	uint8_t bytes[2];
-	bytes[0] = (packet >> 8) & 0xff;
-	Serial.printf("Byte[0] from packet %s", convertToBinary(bytes[0]));
-	bytes[1] = packet & 0xff;
-	Serial.printf("Byte[1] from packet %s", convertToBinary(bytes[1]));
-	uart_write_bytes(this->uart_num, (const char *)&bytes, 2);
+	if (lastTimePackageSent - millis() > MINIMUM_SEND_TIME)
+	{
+		uint8_t bytes[2];
+		bytes[0] = (packet >> 8) & 0xff;
+		bytes[1] = packet & 0xff;
+		uart_write_bytes(this->uart_num, (const char *)&bytes, 2);
+
+		lastTimePackageSent = millis();
+
+#ifdef DEBUG
+		Serial.printf("Byte[0] from packet %s\n", convertToBinary(bytes[0]));
+		Serial.printf("Byte[1] from packet %s\n", convertToBinary(bytes[1]));
+#endif
+
+		return true;
+	}
 
 	// TODO: Implement error checking and return value.
-	return true;
+	//? How would we error check this? Other then above
+	return false;
 }
 
 /**
@@ -214,8 +228,10 @@ bool M16::requestReport()
 bool M16::sendPacket(ProtocolStructure packet)
 {
 	unsigned short encodedPackage = encode(packet);
+#ifdef DEBUG
 	Serial.print("Encoded data: ");
 	Serial.println(convertToBinary(encodedPackage));
+#endif
 	return sendPacket(encodedPackage);
 }
 

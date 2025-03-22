@@ -51,32 +51,32 @@ enum Command : uint8_t
  */
 struct ProtocolStructure
 {
-	unsigned char id;	 ///< Identification of the device (only first 3 bits used).
-	Command command;	 ///< The command type indicating the action to perform.
-	unsigned short data; ///< The actual data being transmitted.
+	unsigned char id = 0;	 ///< Identification of the device (only first 3 bits used).
+	Command command = 0;	 ///< The command type indicating the action to perform.
+	unsigned short data = 0; ///< The actual data being transmitted.
 };
 
 struct Report
 {
-	uint8_t startOfFrame;
-	uint16_t transportBlock;
-	uint8_t bitErrorRate;
-	uint8_t signalPower;
-	uint8_t noisePower;
-	uint16_t packetValid;
-	uint8_t packedInvalid;
-	uint8_t firmwareVersion;
-	uint32_t timeSinceBoot;
-	uint16_t chipID;
-	uint8_t hwRev;
-	uint8_t channel;
-	uint8_t tbValid;
-	uint8_t txComplete;
-	uint8_t diagnostic;
-	uint8_t reserved;
-	uint8_t powerLevel;
-	uint8_t reserved2;
-	uint8_t endOfFrame;
+	uint8_t startOfFrame = 0;
+	uint16_t transportBlock = 0;
+	uint8_t bitErrorRate = 0;
+	uint8_t signalPower = 0;
+	uint8_t noisePower = 0;
+	uint16_t packetValid = 0;
+	uint8_t packedInvalid = 0;
+	uint8_t firmwareVersion = 0;
+	uint32_t timeSinceBoot = 0;
+	uint16_t chipID = 0;
+	uint8_t hwRev = 0;
+	uint8_t channel = 0;
+	uint8_t tbValid = 0;
+	uint8_t txComplete = 0;
+	uint8_t diagnostic = 0;
+	uint8_t reserved = 0;
+	uint8_t powerLevel = 0;
+	uint8_t reserved2 = 0;
+	uint8_t endOfFrame = 0;
 };
 
 class M16
