@@ -69,9 +69,11 @@ bool M16::sendPacket(unsigned short packet)
 {
 	uint8_t bytes[2];
 	bytes[0] = (packet >> 8) & 0xff;
-	Serial.printf("Byte[0] from packet %s\n", convertToBinary(bytes[0]));
 	bytes[1] = packet & 0xff;
+#ifdef DEBUG
+	Serial.printf("Byte[0] from packet %s\n", convertToBinary(bytes[0]));
 	Serial.printf("Byte[1] from packet %s\n", convertToBinary(bytes[1]));
+#endif
 	uart_write_bytes(this->uart_num, (const char *)&bytes, 2);
 
 	// TODO: Implement error checking and return value.
@@ -214,8 +216,10 @@ bool M16::requestReport()
 bool M16::sendPacket(ProtocolStructure packet)
 {
 	unsigned short encodedPackage = encode(packet);
+#ifdef DEBUG
 	Serial.print("Encoded data: ");
 	Serial.println(convertToBinary(encodedPackage));
+#endif
 	return sendPacket(encodedPackage);
 }
 
