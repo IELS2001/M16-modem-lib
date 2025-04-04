@@ -51,7 +51,7 @@ enum Command : uint8_t
  */
 struct ProtocolStructure
 {
-	unsigned char id;	///< Identification of the device (only first 4 bits used).
+	unsigned char id;	///< Identification of the device (only first 3 bits used).
 	Command command;	///< The command type indicating the action to perform.
 	unsigned char data; ///< The actual data being transmitted.
 };

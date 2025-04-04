@@ -301,7 +301,7 @@ ProtocolStructure M16::decode(uint8_t *messageToDecode)
 {
 	ProtocolStructure result{0, Command::HI, 0};
 	result.id = 0b00001111 & (messageToDecode[0] >> 4);
-	result.command = static_cast<Command>(0b00000111 & (messageToDecode[0]));
+	result.command = static_cast<Command>(0b00001111 & (messageToDecode[0]));
 	result.data = messageToDecode[1];
 	return result;
 }
