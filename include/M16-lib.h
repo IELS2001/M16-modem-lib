@@ -51,9 +51,9 @@ enum Command : uint8_t
  */
 struct ProtocolStructure
 {
-	unsigned char id;	 ///< Identification of the device (only first 3 bits used).
-	Command command;	 ///< The command type indicating the action to perform.
-	unsigned short data; ///< The actual data being transmitted.
+	unsigned char id;	///< Identification of the device (only first 3 bits used).
+	Command command;	///< The command type indicating the action to perform.
+	unsigned char data; ///< The actual data being transmitted.
 };
 
 struct Report
@@ -85,7 +85,7 @@ private:
 	uart_port_t uart_num;
 	void sendByte(uint8_t byte);
 	bool sendPacket(unsigned short packet);
-	unsigned short encode(unsigned char id, Command command, unsigned short data);
+	unsigned short encode(unsigned char id, Command command, unsigned char data);
 	unsigned short encode(ProtocolStructure send);
 
 public:
@@ -99,7 +99,7 @@ public:
 	void setPowerLevel(uint8_t powerLevel);
 	bool requestReport();
 	bool sendPacket(ProtocolStructure packet);
-	bool sendPacket(unsigned char id, Command command, unsigned short data);
+	bool sendPacket(unsigned char id, Command command, unsigned char data);
 	size_t getRxBuffLength();
 	int readRxBuff(uint8_t *data, size_t length);
 };
