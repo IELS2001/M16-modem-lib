@@ -114,6 +114,7 @@ void M16::setCommunicationChannel(uint8_t channel)
 	if (channel < 1 || channel > 12)
 	{
 		// Invalid channel, do nothing.
+		Serial.printf("Wrong channel\n");
 		return;
 	}
 
