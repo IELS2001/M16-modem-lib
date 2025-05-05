@@ -75,6 +75,10 @@ bool M16::sendPacket(unsigned short packet)
 	Serial.printf("Byte[0] from packet %s\n", convertToBinary(bytes[0]));
 	Serial.printf("Byte[1] from packet %s\n", convertToBinary(bytes[1]));
 #endif
+#ifdef DEBUG
+	Serial.printf("Byte[0] from packet %s\n", convertToBinary(bytes[0]));
+	Serial.printf("Byte[1] from packet %s\n", convertToBinary(bytes[1]));
+#endif
 	uart_write_bytes(this->uart_num, (const char *)&bytes, 2);
 
 	// TODO: Implement error checking and return value.
@@ -218,12 +222,15 @@ bool M16::sendPacket(ProtocolStructure packet)
 {
 	unsigned short encodedPackage = encode(packet);
 #ifdef DEBUG
+#ifdef DEBUG
 	Serial.print("Encoded data: ");
 	Serial.println(convertToBinary(encodedPackage));
+#endif
 #endif
 	return sendPacket(encodedPackage);
 }
 
+bool M16::sendPacket(unsigned char id, Command command, unsigned char data)
 bool M16::sendPacket(unsigned char id, Command command, unsigned char data)
 {
 	unsigned short encodedPackage = encode(id, command, data);
@@ -268,8 +275,12 @@ int M16::readRxBuff(uint8_t *data, size_t length)
  * @return The final encoded message as an unsigned short.
  */
 unsigned short M16::encode(unsigned char id, Command command, unsigned char data)
+unsigned short M16::encode(unsigned char id, Command command, unsigned char data)
 {
 	unsigned short codedMessage = 0;
+	codedMessage |= ((0b00001111 & id) << (4 + 8));
+	codedMessage |= ((0b00001111 & command) << (8));
+	codedMessage |= 0b0000000011111111 & data;
 	codedMessage |= ((0b00001111 & id) << (4 + 8));
 	codedMessage |= ((0b00001111 & command) << (8));
 	codedMessage |= 0b0000000011111111 & data;
@@ -304,6 +315,10 @@ unsigned short M16::encode(ProtocolStructure send)
  */
 ProtocolStructure M16::decode(unsigned short messageToDecode)
 {
+	ProtocolStructure result{0, Command::HI, 0};
+	result.id = 0b0000000000001111 & (messageToDecode >> (4 + 8));
+	result.command = static_cast<Command>(0b0000000000001111 & (messageToDecode >> (8)));
+	result.data = (messageToDecode & 0b0000000011111111);
 	ProtocolStructure result{0, Command::HI, 0};
 	result.id = 0b0000000000001111 & (messageToDecode >> (4 + 8));
 	result.command = static_cast<Command>(0b0000000000001111 & (messageToDecode >> (8)));
