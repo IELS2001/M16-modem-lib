@@ -38,18 +38,19 @@ void M16::begin(uint8_t rx_pin, uint8_t tx_pin)
 		.stop_bits = UART_STOP_BITS_1,
 		.flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
 		.rx_flow_ctrl_thresh = 122,
+		.source_clk = UART_SCLK_REF_TICK,
 	};
 	if (uart_param_config(this->uart_num, &uart_config) != ESP_OK)
 	{
-		Serial.print("Failed to configure UART parameters for M16.");
+		Serial.println("Failed to configure UART parameters for M16.");
 	}
 	if (uart_set_pin(this->uart_num, tx_pin, rx_pin, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE) != ESP_OK)
 	{
-		Serial.print("Failed to set UART pins for M16.");
+		Serial.println("Failed to set UART pins for M16.");
 	}
 	if (uart_driver_install(this->uart_num, 1024, 0, 0, NULL, 0) != ESP_OK)
 	{
-		Serial.print("Failed to install UART driver for M16.");
+		Serial.println("Failed to install UART driver for M16.");
 	}
 }
 
@@ -69,9 +70,11 @@ bool M16::sendPacket(unsigned short packet)
 {
 	uint8_t bytes[2];
 	bytes[0] = (packet >> 8) & 0xff;
-	Serial.printf("Byte[0] from packet %s", convertToBinary(bytes[0]));
 	bytes[1] = packet & 0xff;
-	Serial.printf("Byte[1] from packet %s", convertToBinary(bytes[1]));
+#ifdef DEBUG
+	Serial.printf("Byte[0] from packet %s\n", convertToBinary(bytes[0]));
+	Serial.printf("Byte[1] from packet %s\n", convertToBinary(bytes[1]));
+#endif
 	uart_write_bytes(this->uart_num, (const char *)&bytes, 2);
 
 	// TODO: Implement error checking and return value.
@@ -214,12 +217,14 @@ bool M16::requestReport()
 bool M16::sendPacket(ProtocolStructure packet)
 {
 	unsigned short encodedPackage = encode(packet);
+#ifdef DEBUG
 	Serial.print("Encoded data: ");
 	Serial.println(convertToBinary(encodedPackage));
+#endif
 	return sendPacket(encodedPackage);
 }
 
-bool M16::sendPacket(unsigned char id, Command command, unsigned short data)
+bool M16::sendPacket(unsigned char id, Command command, unsigned char data)
 {
 	unsigned short encodedPackage = encode(id, command, data);
 	return sendPacket(encodedPackage);
@@ -230,6 +235,16 @@ size_t M16::getRxBuffLength()
 	size_t buffered_size;
 	uart_get_buffered_data_len(this->uart_num, &buffered_size);
 	return buffered_size;
+}
+
+void M16::flushTxBuffer()
+{
+	uart_flush(this->uart_num);
+}
+
+void M16::refreshBaudRate()
+{
+	uart_set_baudrate(this->uart_num, M16_BAUD);
 }
 
 int M16::readRxBuff(uint8_t *data, size_t length)
@@ -243,31 +258,34 @@ int M16::readRxBuff(uint8_t *data, size_t length)
 /**
  * @brief Encodes input values into a 16-bit message.
  *
- * This function constructs a 16-bit message by encoding an ID (3 bits), a command (3 bits),
- * and data (10 bits). The format of the final message is:
- * - bbb(ID)bbb(Command)bbbbbbbbbb(Data)
+ * This function constructs a 16-bit message by encoding an ID (4 bits), a command (4 bits),
+ * and data (8 bits). The format of the final message is:
+ * - bbbb(ID)bbbb(Command)bbbbbbbb(Data) or IIIICCCCDDDD
  *
  * @param id The ID to identify a unit (only the first 3 bits are kept).
  * @param command The command/type of the action (only the first 3 bits are kept).
  * @param data The actual data to send (first 10 bits are used).
  * @return The final encoded message as an unsigned short.
  */
-unsigned short M16::encode(unsigned char id, Command command, unsigned short data)
+unsigned short M16::encode(unsigned char id, Command command, unsigned char data)
 {
 	unsigned short codedMessage = 0;
-	codedMessage |= ((0b00000111 & id) << (5 + 8));
-	codedMessage |= ((0b00000111 & command) << (2 + 8));
-	codedMessage |= 0b0000001111111111 & data;
+	codedMessage |= ((0b00001111 & id) << (4 + 8));
+	codedMessage |= ((0b00001111 & command) << (8));
+	codedMessage |= 0b0000000011111111 & data;
 	return codedMessage;
 }
 
 /**
- * @brief Encodes a ProtocolStructure into a 16-bit message.
+ * @brief Encodes input values into a 16-bit message.
  *
- * This function takes a `ProtocolStructure` object and encodes its fields into a
- * single 16-bit message.
+ * This function constructs a 16-bit message by encoding an ID (4 bits), a command (4 bits),
+ * and data (8 bits). The format of the final message is:
+ * - bbbb(ID)bbbb(Command)bbbbbbbb(Data) or IIIICCCCDDDD
  *
- * @param send The `ProtocolStructure` containing the ID, command, and data to encode.
+ * @param id The ID to identify a unit (only the first 3 bits are kept).
+ * @param command The command/type of the action (only the first 3 bits are kept).
+ * @param data The actual data to send (first 10 bits are used).
  * @return The final encoded message as an unsigned short.
  */
 unsigned short M16::encode(ProtocolStructure send)
@@ -278,7 +296,7 @@ unsigned short M16::encode(ProtocolStructure send)
 /**
  * @brief Decodes a 16-bit message into a `ProtocolStructure`.
  *
- * This function extracts the ID (3 bits), command (3 bits), and data (10 bits) from the
+ * This function extracts the ID (4 bits), command (4 bits), and data (8 bits) from the
  * given 16-bit message and returns them in a `ProtocolStructure` object.
  *
  * @param messageToDecode The 16-bit encoded message.
@@ -286,20 +304,28 @@ unsigned short M16::encode(ProtocolStructure send)
  */
 ProtocolStructure M16::decode(unsigned short messageToDecode)
 {
-	ProtocolStructure result;
-	result.id = 0b0000000000000111 & (messageToDecode >> (5 + 8));
-	result.command = static_cast<Command>(0b0000000000000111 & (messageToDecode >> (2 + 8)));
-	result.data = (messageToDecode & 0b0000001111111111);
+	ProtocolStructure result{0, Command::HI, 0};
+	result.id = 0b0000000000001111 & (messageToDecode >> (4 + 8));
+	result.command = static_cast<Command>(0b0000000000001111 & (messageToDecode >> (8)));
+	result.data = (messageToDecode & 0b0000000011111111);
 	return result;
 }
 
+/**
+ * @brief Decodes a 16-bit message into a `ProtocolStructure`.
+ *
+ * This function extracts the ID (4 bits), command (4 bits), and data (8 bits) from the
+ * given 16-bit message and returns them in a `ProtocolStructure` object.
+ *
+ * @param messageToDecode The 16-bit encoded message.
+ * @return A `ProtocolStructure` containing the extracted ID, command, and data.
+ */
 ProtocolStructure M16::decode(uint8_t *messageToDecode)
 {
-	ProtocolStructure result;
-	result.id = 0b00000111 & (messageToDecode[0] >> 5);
-	result.command = static_cast<Command>(0b00000111 & (messageToDecode[0] >> 2));
-	result.data = (messageToDecode[0] & 0b00000011) << 8;
-	result.data |= messageToDecode[1];
+	ProtocolStructure result{0, Command::HI, 0};
+	result.id = 0b00001111 & (messageToDecode[0] >> 4);
+	result.command = static_cast<Command>(0b00000111 & (messageToDecode[0]));
+	result.data = messageToDecode[1];
 	return result;
 }
 
