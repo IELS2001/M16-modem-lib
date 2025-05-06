@@ -54,9 +54,6 @@ struct ProtocolStructure
 	unsigned char id;	///< Identification of the device (only first 3 bits used).
 	Command command;	///< The command type indicating the action to perform.
 	unsigned char data; ///< The actual data being transmitted.
-	unsigned char id;	///< Identification of the device (only first 3 bits used).
-	Command command;	///< The command type indicating the action to perform.
-	unsigned char data; ///< The actual data being transmitted.
 };
 
 struct Report
@@ -102,7 +99,6 @@ public:
 	void setPowerLevel(uint8_t powerLevel);
 	bool requestReport();
 	bool sendPacket(ProtocolStructure packet);
-	bool sendPacket(unsigned char id, Command command, unsigned char data);
 	bool sendPacket(unsigned char id, Command command, unsigned char data);
 	size_t getRxBuffLength();
 	void flushTxBuffer();
